@@ -1,0 +1,235 @@
+rm(list=ls())
+library(tidyverse)
+library(rvest)
+library(RSelenium)
+library(tidyr)
+egap%>%
+  html_nodes("div.c-design-registry__item-title.o-h6.u-c-navy-blue.u-fw-600")%>%
+  html_text
+  sub_egap <- sub_egap[!is.na(sub_egap)][1:20]
+datapist<-list()
+iii=1
+#####parser for all urls needed (each project's page url)
+for (iii in 1:73) {
+  print(paste("https://egap.org/registry/?from=",toString(1*iii),sep=""))
+  #get the link
+  egap <-read_html(paste("https://egap.org/registry/?from=",toString(1*iii),sep=""))
+  sub_egap<-html_nodes(egap, "div.c-design-registry__item-title.o-h6.u-c-navy-blue.u-fw-600")%>%
+  html_children()%>%
+  html_attr("href")
+  egapap <- as.data.frame(sub_egap)
+  datapist[[iii]]<-egapap
+  Sys.sleep(1)
+}
+
+p<-do.call(rbind.data.frame, datapist)
+v<-p$sub_egap
+
+
+
+v<-unlist(datapist, recursive=FALSE, use.names = TRUE)
+
+#####Parser for getting all the info from the url pages we collected previously
+#####Download and install Docker; Open Docker Terminal and run 
+####docker pull selenium/standalone-chrome. Replace chrome with firefox 
+####if you're a Firefox user.Then docker run -d -p 4445:4444 selenium/standalone-chrome
+#####If above two codes are successful, run docker-machine ip and note the 
+#####IP address to be used in the R code
+
+driver <- remoteDriver(browserName = "chrome", 
+                       remoteServerAddr = "127.0.0.1", port = 4445L)
+driver$open()
+scrapped = list()
+datalist=list()
+
+i <- 1
+while(i <= 416){
+  url <- v[i]
+  print( paste("Accessing to:", url) )
+  driver$navigate(url)
+  Sys.sleep(3)
+  Output <- driver$findElements(using='css selector', "p")
+  title <- unlist(lapply(Output, function(x){x$getElementText()}))
+  Sys.sleep(3)
+  scrapped <- as.data.frame(title)
+  datalist[[i]]<-scrapped
+  i = i + 1
+}
+
+g<-do.call(cbindX, datalist)
+library(gdata)
+fixfinal<-do.call(cbindX, datalist[1:416])
+fixfinal2<-do.call(cbindX, datalist[418:680])
+fixfinal3<-do.call(cbindX, datalist[682:816])
+fixfinal4<-do.call(cbindX, datalist[817:1452])
+
+
+fix1<-cbindX(fixfinal, fixfinal2)
+fix2<-cbindX(fix1, fixfinal3)
+fix3<-cbindX(fix2, fixfinal4)
+
+
+final_df <- as.data.frame(t(fix3))
+
+write.csv(x=final_df,
+            file='Egap.csv',
+            row.names = FALSE)
+Figap <- read.csv("/Users/vvpolt/Egap.csv", header=TRUE, sep=",")
+
+
+####to clean the data
+Figap<-final_df
+library(dplyr)
+Figap<-Figap %>% 
+  filter(!grepl('Copyright', V1))
+
+
+table(Figap$V1)
+Figap<-Figap %>% 
+  rename(
+    Title=V2,
+    Registration_ID=V4,
+    Reg_Timestamp=V6,
+    Acknowl=V8,
+    Faculty_member=V10,
+    Aff=V12,
+    Registration_type=V14,
+    Exp_study=V19,
+    Date=V22,
+    P_Descrip=V28,
+    Hyp=V30,
+    Test=V32,
+    Country=V34,
+    Size=V36,
+    Pow_an=V38,
+    IRB=V42,
+    IRB_add=V44,
+    IRB_num=V46,
+    IRB_app_date=V48,
+    third_party=V51,
+    Renum=V53,
+    Pub_agr=V59,
+    JEL=V61
+  )
+
+Figap[] <- lapply(Figap, as.character)
+
+Figap$V50<-ifelse(Figap$V50=="No response", Figap$third_party, Figap$V50)
+Figap$third_party<-ifelse(Figap$third_party=="Third party implementer information", Figap$V52, 
+                  Figap$third_party)
+Figap$V52<-ifelse(Figap$V52=="No response", Figap$Renum, Figap$V52)
+Figap$V52<-ifelse(Figap$V52=="No response", Figap$Renum, Figap$V52)
+Figap$Renum<-ifelse(grepl ("Did any of the research",Figap$Renum), 
+                    Figap$V54, Figap$Renum)
+Figap$JEL<-ifelse(Figap$JEL=="JEL classification(s)", "No reponse", Figap$JEL)
+
+Figap = subset(Figap, select = c(Title, Registration_ID, Reg_Timestamp,
+                                 Acknowl, Faculty_member, Registration_type,
+                                 Exp_study, Date, P_Descrip, Hyp, Test, Country, Size,
+                                 Pow_an, IRB, IRB_add, IRB_num, IRB_app_date,
+                                 third_party, Renum, Pub_agr, JEL))
+write.table(x=Figap,
+            file='Egap_f.csv',
+            sep=",",
+            row.names = FALSE)
+###End of cleaning
+###Parser for authors names
+listik=list()
+for (i in 1:73){
+  #print the link you are collecting
+  print(paste("https://egap.org/registry/?from=",toString(1*i),sep=""))
+  #get the link
+  url <-read_html(paste("https://egap.org/registry/?from=",toString(1*i),sep=""))
+  titles<-url%>%
+    html_nodes("div.c-design-registry__item-title.o-h6.u-c-navy-blue.u-fw-600")%>%
+    html_text
+  titles <- gsub("\n    ", "", titles)
+  titles <- trimws(titles, which = "both")
+  table(titles)
+  
+  authors<-url%>%
+    html_nodes("div.c-design-registry__item-authors")%>%
+    html_text
+  authors <- trimws(authors, which = "both")
+  table(authors)
+  
+  pp<-data.frame(titles, authors)
+  listik[[i]]<-pp
+  
+  Sys.sleep(1)
+
+}
+
+
+titi<-do.call(rbind.data.frame, listik)
+
+titi[] <- lapply(titi, as.character)
+titi$authors <- trimws(titi$authors)
+searchString <- '               '
+replacementString <- ''
+titi$authors = sub(searchString,replacementString,titi$authors)
+titi$authors
+
+titi<-titi%>%
+  rename (Title=titles)
+
+joint<-merge(Figap, titi, by="Title")
+joint<-unique(joint$Title)
+
+url <- sub_egap[5]
+print( paste("Accessing to:", url) )
+driver$navigate(url)
+Output <- driver$findElements(using='css selector', "p")
+
+
+html <- sub_egap[[1]]
+signals <- read_html(html)
+library('XML')
+library(stringr)
+i=1
+datalist=list()
+
+
+html <- sub_egap[[1:20]]
+signals <- read_html(html)
+driver$navigate(html)
+Output <- driver$findElements(using='css selector', "p")
+Sys.sleep(3)
+title <- unlist(lapply(Output, function(x){x$getElementText()}))
+title
+Sys.sleep(1)
+
+
+html <- sub_egap[[i]]
+driver$navigate(html)
+Output <- driver$findElements(using='css selector', "p")
+
+Output <- driver$findElements(using='css selector', "p")
+
+
+subs<-data.frame(url=c(list(sub_egap)))
+
+
+init <- driver$findElement(using = 'css selector', ".c-design-registry__item-title")
+init$clickElement()
+RCT<-function(s){
+  title<-html_nodes(s, "p")%>%html_text()
+  final<-data.frame(title)
+  return(final)
+}
+
+i = 1
+for (i in 1:20) {
+  sub_egap_out <- read_html(paste(sub_egap[i], sep = ""))
+  print(RCT(sub_egap_out))
+}
+
+full=data.frame(sub_egap_out)
+
+egap<-read_html("https://egap.org/registry/")
+sub_egap<-html_nodes(egap, "div.c-design-registry__item-title.o-h6.u-c-navy-blue.u-fw-600")%>%
+  html_children()%>%
+  html_attr("href")
+
+  driver$navigate(sub_egap)%>%
+  Output <- driver$findElements(using='css selector', "p")
