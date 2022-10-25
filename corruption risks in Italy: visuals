@@ -108,22 +108,14 @@ agreg_it <- agreg_it %>%
   filter(Year1<"2020")
 ###to show one municipality progress
 Catanzaro<-agreg_it%>%
-  filter(buyer_city=="Catanzaro")
-Macerata<-agreg_it%>%
-  filter(buyer_city=="Macerata")
+  filter(buyer_city=="Catanzaro"|buyer_city=="Potenza")
 
-ee<-ggplot(Catanzaro, aes(Year1, Integrity_score, group=1)) + 
+ggplot(Catanzaro, aes(Year1, Integrity_score, group=1)) + 
   geom_point()+
   geom_line()+
-  labs(y = "Integrity score", x="Year")+
+  labs(title="Integrity score distribution: scale 0 - 100", y = "Integrity score", x="Year")+
   facet_wrap(~buyer_city)
-ee  
-uu<-ggplot(Macerata, aes(Year1, Integrity_score, group=1)) + 
-  geom_point()+
-  geom_line()+
-  labs(y = "Integrity score", x="Year")+
-  facet_wrap(~buyer_city)
-uu 
+  
 ###To create a map
 geom_histogram()
 library(ggrepel)
@@ -142,7 +134,7 @@ gg<-ggmap(bw_map)+
 gg<-gg + geom_map(data=italy_map, map=italy_map,
                aes(long, lat, map_id=region),
                color="black", size=0.5, fill=NA)
-gg<-gg+geom_text_repel(data = all_unique_g, aes(x = lon, y = lat, label = gplaces), color="white")
+gg<-gg+geom_text_repel(data = all_unique_g, aes(x = long, y = lat, label = gplaces), color="white")
 
 gg
 
@@ -218,14 +210,14 @@ ggplot2::ggplot(agreg_se, aes(x=Integrity_score)) +
 
 ###To show two local exceptional cases
 Angelhom<-agreg_se%>%
-  filter(buyer_city=="Alingsås")
+  filter(buyer_city=="Bjuv"|buyer_city=="Täby")
 
-qq<-ggplot(Angelhom, aes(Year1, Integrity_score, group=1)) + 
+ggplot(Angelhom, aes(Year1, Integrity_score, group=1)) + 
   geom_point()+
   geom_line()+
-  labs(y = "Integrity score", x="Year")+
+  labs(title="Integrity score distribution: scale 0 - 100", y = "Integrity score", x="Year")+
   facet_wrap(~buyer_city)
-qq
+
 ###UGANDA
 ###openthe file
 df_ind_u<-read.csv("UG_data_cri_UG.csv")
@@ -268,16 +260,7 @@ ggplot2::ggplot(agreg_ug, aes(x=Integrity_score)) +
   geom_vline(aes(xintercept=mean(Integrity_score)),
              color="blue", linetype="dashed", size=1)+
   facet_wrap(~Year1)
-###municipality
-Angelhom<-agreg_ug%>%
-  filter(buyer_city=="Nebbi")
 
-ww<-ggplot(Angelhom, aes(Year1, Integrity_score, group=1)) + 
-  geom_point()+
-  geom_line()+
-  labs(y = "Integrity score", x="Year")+
-  facet_wrap(~buyer_city)
-ww
 #####GEORGIA
 
 df_ind_g<-read_csv("GE_data_cri_GE.csv")
@@ -372,18 +355,18 @@ gg
 
 
 ####multiple hits on one
-colors <- c("Italy" = "lightyellow", "Sweden" = "lightblue", "Colombia" = "coral", "Uganda"="lightgreen")
+colors <- c("Italy" = "lightyellow", "Sweden" = "lightblue", "Georgia" = "coral", "Uganda"="lightgreen")
 gg_h<-ggplot()
 gg_h<-ggplot(agreg_se_all, aes(x=Integrity_score, fill="Sweden")) + 
   geom_histogram(colour="black", bins=30, alpha = 0.8)+
-  labs(title="Integrity score distribution: scale 0 - 100\nColombia, Italy, Sweden, Uganda", x = "Integrity score", y="Count")+
+  labs(title="Integrity score distribution: scale 0 - 100\nGeorgia, Italy, Sweden, Uganda", x = "Integrity score", y="Count")+
   theme_minimal()+
   aes(y=stat(count)/sum(stat(count)))+ 
   scale_y_continuous(labels = scales::percent)+
   labs(y="Percent")
 gg_h<-gg_h+geom_histogram(data=agreg_it_all, aes (x=Integrity_score, fill="Italy"),
                           colour="black", bins=30, alpha = 0.8)
-gg_h<-gg_h+geom_histogram(data=agreg_co_all, aes (x=Integrity_score, fill="Colombia"),
+gg_h<-gg_h+geom_histogram(data=agreg_ge_all, aes (x=Integrity_score, fill="Georgia"),
                           colour="black", bins=30, alpha = 0.8)
 gg_h<-gg_h+geom_histogram(data=agreg_ug_all, aes (x=Integrity_score, fill="Uganda"),
                           colour="black",bins=30, alpha = 0.8)
