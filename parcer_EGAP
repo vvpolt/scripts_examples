@@ -233,3 +233,159 @@ sub_egap<-html_nodes(egap, "div.c-design-registry__item-title.o-h6.u-c-navy-blue
 
   driver$navigate(sub_egap)%>%
   Output <- driver$findElements(using='css selector', "p")
+  
+###Cleaning
+figap1<-Figap[212:1450, ]
+figap2<-Figap[1:211, ]
+figap1<-within(figap1, rm(V23, V24, V25, V27))
+figap2<-within(figap2, rm(V75, V76, V77, V78))
+figap1<-figap1 %>% 
+  rename(
+    Title=V2,
+    Registration_ID=V4,
+    Reg_Timestamp=V6,
+    Acknowl=V8,
+    Faculty_member=V10,
+    Aff=V12,
+    Registration_type=V14,
+    Exp_study=V19,
+    Date=V22,
+    Design_pres=V28,
+    Background=V32,
+    Hyp=V34,
+    Test=V36,
+    Country=V38,
+    Size=V40,
+    Pow_an=V42,
+    IRB=V46,
+    IRB_add=V44,
+    IRB_num=V50,
+    IRB_app_date=V52,
+    Impl=V54,
+    Impl_third=V56,
+    Renum=V58,
+    Pub_agr=V62,
+    JEL=V66
+  )
+figap1 = subset(figap1, select = c(Title,Registration_ID,Reg_Timestamp,Acknowl,
+                                   Faculty_member,Aff,Registration_type,Exp_study,Date,
+                                   Design_pres,Background,Hyp,Test,Country,Size,Pow_an,
+                                   IRB,IRB_add,IRB_num,IRB_app_date,Impl,Impl_third,
+                                   Renum,Pub_agr,JEL))
+
+figap2<-figap2 %>% 
+  rename(
+    Title=V2,
+    Registration_ID=V4,
+    Reg_Timestamp=V6,
+    Acknowl=V8,
+    Faculty_member=V10,
+    Aff=V12,
+    Registration_type=V14,
+    Exp_study=V19,
+    Date=V22,
+    Design_pres=V24,
+    Background=V28,
+    Hyp=V30,
+    Test=V32,
+    Country=V34,
+    Size=V36,
+    Pow_an=V38,
+    IRB=V42,
+    IRB_add=V44,
+    IRB_num=V46,
+    IRB_app_date=V48,
+    Impl=V50,
+    Impl_third=V51,
+    Renum=V53,
+    Pub_agr=V57,
+    JEL=V61
+  )
+figap2 = subset(figap2, select = c(Title,Registration_ID,Reg_Timestamp,Acknowl,
+                                   Faculty_member,Aff,Registration_type,Exp_study,Date,
+                                   Design_pres,Background,Hyp,Test,Country,Size,Pow_an,
+                                   IRB,IRB_add,IRB_num,IRB_app_date,Impl,Impl_third,
+                                   Renum,Pub_agr,JEL))
+
+library(plyr)
+titi[] <- lapply(titi, as.character)
+titi$authors<-str_squish(titi$authors)
+titi$Title<-str_squish(titi$Title)
+Figap$Title<-str_squish(Figap$Title)
+joint<-join(Figap, titi)
+joint <- joint %>% mutate_all(na_if,"")
+joint <- dplyr::distinct(joint)
+joint<-joint %>% drop_na(Registration_ID)
+
+table(joint$Faculty_member)
+write.csv(x=joint,
+          file='EGAP_draft.csv',
+          row.names = FALSE)
+library(foreign)
+write.dta(joint, 
+          file="RIDIE_draft.dta")
+####Continue cleaning
+Figap<-read.csv("/Users/vvpolt/downloads/EGAP_draft.csv", header=TRUE, sep=",")
+
+library(tidyverse)
+Figap <- Figap %>% 
+  mutate(Authors = authors)
+Figap<-separate(Figap, 'authors', paste("authors", 1:5, sep="_"), sep=",", extra="drop")
+Figap<-separate(Figap, 'Reg_Timestamp', paste("Reg_timestamp", 1:2, sep="_"), sep="-", extra="drop")
+table(Figap$Exp_study)
+Figap$Background<-str_squish(Figap$Background)
+Figap$Hyp<-str_squish(Figap$Hyp)
+Figap$Test<-str_squish(Figap$Test)
+Figap$Impl_third<-str_squish(Figap$Impl_third)
+Figap$Country<-str_squish(Figap$Country)
+Figap$Registration_type<-str_squish(Figap$Registration_type)
+Figap$Renum<-str_squish(Figap$Renum)
+Figap$Pub_agr<-str_squish(Figap$Pub_agr)
+Figap$Design_pres<-str_squish(Figap$Design_pres)
+table(Figap$Design_pres)
+Figap = Figap %>% select(Title,Authors,Registration_ID,Reg_timestamp_1, Reg_timestamp_2,
+                       Acknowl,Faculty_member,Aff,Registration_type,Exp_study,Date,
+                       Design_pres,Background,Hyp,Test,Country,Size,Pow_an,
+                       IRB,IRB_add,IRB_num,IRB_app_date,Impl,Impl_third,
+                       Renum,Pub_agr,JEL,authors_1, authors_2, authors_3, authors_4,
+                       authors_5)
+Figap$Renum<-ifelse(Figap$Renum=="Did any of the research team receive remuneration from the implementing agency for taking part in this research?", ("No response"), Figap$Renum)
+Figap$Pub_agr<-ifelse(Figap$Pub_agr=="If relevant, is there an advance agreement with the implementation group that all results can be published?", ("No response"), Figap$Pub_agr)
+Figap$Pub_agr<-ifelse(Figap$Pub_agr=="Keywords for Methodology", ("No response"), Figap$Pub_agr)
+Figap$Design_pres<-ifelse(Figap$Design_pres=="Since the outbreak of the Syrian refugee crisis, more than 10.5 million Syrians have been displaced by force (and almost half of them have sought asylum and refuge in other countries). While many of those refugees are hosted now by EU countries, most of the displaced population resides in Turkey (more than 3.5 million). Importantly, more than 90% of them are living outside refugee camps and have regular and frequent encounters with locals. The sheer number of Syrian refugees living outside refugee camps places an important challenge regarding their successful economic, social and political integration into their host communities (for example, it is estimated that 400,000 stateless children age 0-5 were born in Turkey to Syrian refugees and have never been to Syria). As a result, it is crucial to explore and understand the mechanisms that drive locals’ attitudes towards refugees and their integration. In other words, is religious or cultural –and identity more general— proximity the key factor behind successful integration or, perhaps does the effort and willingness from the part of refugees (and outgroups in general) to integrate into their host communities get rewarded by locals? The lack of systematic and causal evidence is particularly troubling for an additional reason: if policies that can alleviate those concerns and facilitate the integration of refugees in their host communities are to be employed, understanding what drives the animus (or support) towards refugee integration is key. Moreover, refugees’ effort and ability to integrate (e.g. through forming social ties with locals, or learning the language) is confounded with general ability, skills and other characteristics of a person that might make them more desirable to the host community. Thus, it is also an empirical challenge to identify the effect that effort to integrate has on successful integration of refugees and immigrants in general.", ("No response"), Figap$Design_pres)
+Figap[Figap == "N/A" ] <- NA
+
+write.csv(x=Figap,
+          file='EGAP_draft.csv',
+          row.names = FALSE)
+
+
+egap<-read_xlsx('EGAP_auth.xlsx')
+table(egap$Impl)
+egap<-separate_rows(egap, Country, sep=",", convert = TRUE)
+egap$Country<-str_squish(egap$Country)
+egap$partn_d<-ifelse(grepl("(gov|Gov|state|State|County|county|Minstry|Ministry|ministry)", egap$Impl_third), 1, 2)
+egap$partn_d<-ifelse(egap$Impl_third=="Institute for Governmental Studies", 2, egap$partn_d)
+egap$partn_d<-ifelse(egap$Impl=="Researchers", 0, egap$partn_d)
+egap$partn_d<-ifelse(egap$Impl=="No response", "No response", egap$partn_d)
+table(egap$partn_d)
+egap[egap == "NA" ] <- NA
+egap <- egap %>% mutate_all(na_if,"")
+egap$...51<-NULL
+egap$IRB_num<-str_squish(egap$IRB_num)
+egap$IRB_app_date<-str_squish(egap$IRB_app_date)
+egap$size<-str_squish(egap$size)
+write.csv(x=egap,
+          file='EGAP_final.csv',
+          row.names = FALSE)
+xtabs(Uni_country=="USA"~Uni, data=egap)
+
+egap<-read_xlsx('EGAP_final.xlsx')
+egap$Surv<-ifelse(is.na(egap$Surv), 0, egap$Surv)
+write.csv(x=egap,
+          file='EGAP_final.csv',
+          row.names = FALSE)
+ridie<-read_xlsx('ridie_final.xlsx')
+write.csv(x=ridie,
+          file='ridie_final.csv',
+          row.names = FALSE)
