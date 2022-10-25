@@ -170,3 +170,128 @@ full_df
 write.csv(x=full_df,
           file='Ridie.csv',
           row.names = FALSE)
+          
+###Cleaning
+ridiedie<-read.csv("/Users/vvpolt/desktop/Ridie_f.csv", header=TRUE, sep=";")
+table(ridiedie$Registration.Category)
+ridiedie[] <- lapply(ridiedie, as.character)
+library(stringr)
+ridiedie$Registration.Category<-str_squish(ridiedie$Registration.Category)
+
+trim.leading <- function (x)  sub("^\\s+", "", x)
+# Returns string without trailing white space
+trim.trailing <- function (x) sub("\\s+$", "", x)
+# Returns string without leading or trailing white space
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+ridiedie$Registration.Category<-trim(ridiedie$Registration.Category)
+ridiedie$Title<-trim(ridiedie$Title)
+ridiedie$Registration.Category <- gsub("\n                                                                           ", "", ridiedie$Registration.Category)
+ridiedie$Registration.Category <- trimws(ridiedie$Registration.Category, which = "left")
+ridiedie$Registration.Category
+library(tidyverse)
+ridiedie <- ridiedie %>% mutate_all(na_if,"")
+ridiedie$Location
+ridiedie$Location<-trim(ridiedie$Location)
+ridiedie$Location <- gsub("\n                    ", "", ridiedie$Location)
+ridiedie$Location<-str_squish(ridiedie$Location)
+ridiedie$Categories<-str_squish(ridiedie$Categories)
+ridiedie$Title<-str_squish(ridiedie$Title)
+ridiedie$Abstract<-str_squish(ridiedie$Abstract)
+ridiedie$Outcomes..Endpoints.<-str_squish(ridiedie$Outcomes..Endpoints.)
+ridiedie$Name.of.Partner.Institution<-str_squish(ridiedie$Name.of.Partner.Institution)
+ridiedie$Name.of.Funder.Organization<-str_squish(ridiedie$Name.of.Funder.Organization)
+ridiedie$Name.of.Implementing.Organization<-str_squish(ridiedie$Name.of.Implementing.Organization)
+ridiedie$Name.of.First.PI<-str_squish(ridiedie$Name.of.First.PI)
+ridiedie$Name.of.Second.PI<-str_squish(ridiedie$Name.of.Second.PI)
+ridiedie$Affiliation<-str_squish(ridiedie$Affiliation)
+ridiedie$Affiliation.1<-str_squish(ridiedie$Affiliation.1)
+ridiedie$Additional.Keywords<-str_squish(ridiedie$Additional.Keywords)
+ridiedie$Registration.Citation<-str_squish(ridiedie$Registration.Citation)
+ridiedie$Registration.Category<-str_squish(ridiedie$Registration.Category)
+ridiedie$Details.of.Evaluation.Approach<-str_squish(ridiedie$Details.of.Evaluation.Approach)
+ridiedie$Study.Status<-str_squish(ridiedie$Study.Status)
+ridiedie$Study.is.3ie.funded<-str_squish(ridiedie$Study.is.3ie.funded)
+ridiedie$Type.of.Organization<-str_squish(ridiedie$Type.of.Organization)
+ridiedie$Type.of.Implementing.Organization<-str_squish(ridiedie$Type.of.Implementing.Organization)
+ridiedie$Unit.of.Analysis<-str_squish(ridiedie$Unit.of.Analysis)
+ridiedie$Additional.Evaluation.Method..If.Any.<-str_squish(ridiedie$Additional.Evaluation.Method..If.Any.)
+ridiedie$Primary..or.First..Evaluation.Method<-str_squish(ridiedie$Primary..or.First..Evaluation.Method)
+ridiedie$Intervention.or.Program.Started.at.time.of.Registration<-str_squish(ridiedie$Intervention.or.Program.Started.at.time.of.Registration)
+ridiedie$Location.1 <- trimws(ridiedie$Location.1, which = "both")
+
+ridiedie$Categories<-gsub("([a-z])([A-Z])", "\\1 \\2", ridiedie$Categories)
+ridiedie$Additional.Keywords<-gsub("([a-z])([A-Z])", "\\1 \\2", ridiedie$Additional.Keywords)
+ridiedie$Location.1<-gsub("([a-z])([A-Z])", "\\1 \\2", ridiedie$Location.1)
+ridiedie$Location<-gsub("([a-z])([A-Z])", "\\1 \\2", ridiedie$Location)
+table(ridiedie$Registration.Category)
+
+ehhh<-read_csv("RIDIE_draft.csv")
+
+write.csv(x=ridiedie,
+          file='RIDIE_draft.csv',
+          row.names = FALSE)
+library(foreign)
+write.dta(ridiedie, 
+          file="RIDIE_draft.dta")
+
+
+
+ridie<-read_xlsx('RIDIE_draft.xlsx')
+ridie <- ridie %>% 
+  mutate(Authors = Name.of.First.PI)
+ridie<-separate(ridie, 'Authors', paste("authors", 1:7, sep="_"), sep=",", extra="drop")
+write.csv(x=ridie,
+          file='ridie_a.csv',
+          row.names = FALSE)
+
+
+ridie<-read_xlsx('ridie_a.xlsx')
+ridie[ridie == "NA" ] <- NA
+ridie <- ridie %>% mutate_all(na_if,"")
+ridie<-separate_rows(ridie, Location, sep=",", convert = TRUE)
+ridie$Location<-str_squish(ridie$Location)
+ridie$impl_d<-ifelse(grepl("(Public Sector, e.g. Government Agency or Ministry)", ridie$Type.of.Implementing.Organization), 2, 1)
+ridie$impl_d<-ifelse(is.na(ridie$Type.of.Implementing.Organization), 0, ridie$impl_d)
+table(ridie$impl_d)
+table(ridie$method_1)
+ridie<-ridie %>% 
+  rename(
+    fund_3ie=Study.is.3ie.funded,
+    ID=Study.ID,
+    reg_date=Initial.Registration.Date,
+    upd_date=Last.Update.Date,
+    status=Study.Status,
+    location=Location,
+    abstract=Abstract,
+    reg_cit=Registration.Citation,
+    categories=Categories,
+    keywords=Additional.Keywords,
+    aff1=Affiliation...13,
+    aff2=Affiliation.1,
+    spons=Study.Sponsor,
+    spons_loc=Study.Sponsor.Location,
+    partn_int=Name.of.Partner.Institution,
+    type_partn=Type.of.Organization,
+    partn_loc=Location.1,
+    impl=Name.of.Implementing.Organization,
+    type_impl=Type.of.Implementing.Organization,
+    funder=Name.of.Funder.Organization,
+    type_funder=Type.of.Funder.Organization,
+    interv_t=Intervention.or.Program.Started.at.time.of.Registration,
+    method_1=Primary..or.First..Evaluation.Method,
+    method_2=Other..not.Listed..Method,
+    method_3=Additional.Evaluation.Method..If.Any.,
+    method_4=Other..not.Listed..Method.1,
+    details=Details.of.Evaluation.Approach,
+    outcome=Outcomes..Endpoints.,
+    unit=Unit.of.Analysis,
+    reg_cat=Registration.Category,
+    affil1=Affiliation...40,
+    dep=Dep,
+    aff_count=Aff_country,
+    title=Title
+  )
+
+write.csv(x=ridie,
+          file='ridie_final.csv',
+          row.names = FALSE)
