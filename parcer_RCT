@@ -1,0 +1,172 @@
+rm(list=ls())
+library(tidyverse)
+library(rvest)
+###For Ridie to parse
+ridie<-read_html("https://ridie.3ieimpact.org/index.php?r=search/index")
+ridie%>%
+  html_nodes("td")%>%
+  html_text
+###We need to open each link and see what'a inside
+sub_ridie<-html_nodes(ridie, "td")%>%
+  html_children()%>%
+  html_attr("href")
+sub_ridie <- sub_ridie[!is.na(sub_ridie)][1:20]
+sub_ridie<-sub_ridie[seq(1, length(sub_ridie), 2)]
+RCT_ridie<-function(s){
+  title<-html_nodes(s, "dd")%>%html_text()
+  title <- gsub("\n    ", "", title)
+  title <- trimws(title)
+  final<-data.frame(title)
+  return(final)
+}
+
+datalist = list()
+i = 1
+for (i in 1:10) {
+  sub_ridie_out <- read_html(paste(sub_ridie[i], sep = "[c]"))
+  print(RCT_ridie(sub_ridie_out))
+  final<-data.frame(RCT_ridie(sub_ridie_out))
+  datalist[[i]]<-final
+}
+###To get dataframe out of uneven matrix
+full=do.call(cbindX, datalist)
+####To assign rownames
+full <- tibble::rowid_to_column(full, "ID")
+####To create dataset for the first 8 observations
+full1<-full %>% slice(1:8)
+####To get rows as variables and columns as observations
+full2<-t(full1)
+full3=as.data.frame(full2)
+full3$V8<-as.character(full3$V8)
+full3$V7<-as.character(full3$V7)
+full3<-full3%>%mutate_all(na_if,"")
+full3$V8<-ifelse(is.na(full3$V8), full3$V7, full3$V8)
+full3$V7<-ifelse(full3$V7==full3$V8, NA, full3$V7)
+
+
+m1<-matrix(datalist, ncol=10, byrow=TRUE)
+d1 <- as.data.frame(datalist, optional=TRUE, stringsAsFactors=FALSE,make.names=TRUE, 
+                    fix.empty.names=TRUE)
+myDF <- data.frame(columnNameILike = row.names(m1), m1)
+?data.frame
+d1 <- as.data.frame(m1[[1]], stringsAsFactors=FALSE)
+d2 <- as.data.frame(m1[[2]], stringsAsFactors=FALSE)
+d3 <- as.data.frame(m1[[3]], stringsAsFactors=FALSE)
+dd <- merge(d1, d2, by="row.names", all=TRUE)
+
+
+?merge
+X <- split(dd, dd$g)
+str(X)
+
+?rbind
+
+?merge
+?combine_first
+Map(cbind.fill, h, g, MoreArgs = list(fill=NA))
+d2<-as.data.frame
+d2$title<-as.data.frame(m1[1,10])
+
+
+###For Egap
+egap<-read_html("https://egap.org/registry/")
+egap%>%
+  html_nodes("div.c-design-registry__item-title.o-h6.u-c-navy-blue.u-fw-600")%>%
+  html_text
+sub_egap<-html_nodes(egap, "div.c-design-registry__item-title.o-h6.u-c-navy-blue.u-fw-600")%>%
+  html_children()%>%
+  html_attr("href")
+sub_egap <- sub_egap[!is.na(sub_egap)][1:12]
+sub_egap
+
+RCT<-function(s){
+  title<-html_nodes(s, "p._ResponseValue_17j1v8._Element_t890a9")%>%html_text()
+  category<-html_nodes(s, "div._span")%>%html_text()
+  final<-data.frame(title, category)
+  return(final)
+}
+
+i = 1
+for (i in 1:12) {
+  sub_egap_out <- read_html(paste(sub_egap[i], sep = ""))
+  print(RCT(sub_egap_out))
+}
+
+full=data.frame(sub_egap_out)
+
+
+check<-read_html("https://osf.io/h2fa4")
+check%>%
+  html_nodes("p")%>%
+  html_text()
+
+?html_node
+
+html_nodes(s, "div._span")%>%html_text()
+
+install.packages("RSelenium")
+install.packages("rvest")
+require(RSelenium)
+require(rvest)
+system('docker run -d -p 4445:4444 selenium/standalone-firefox')
+
+
+
+ridie<-read_html("https://ridie.3ieimpact.org/index.php?r=search/index")
+ridie%>%
+  html_nodes("td")%>%
+  html_text
+sub_pages<-html_nodes(ridie, "li")%>%
+  html_children()%>%
+  html_attr("href")
+
+
+sub_pages <- sub_pages[!is.na(sub_pages)][1:46]
+sub_pages<-str_remove(sub_pages, "#")
+?gsub
+m2<-as.list(sub_pages)
+
+
+###Full script for ridie website
+dataist=list()
+datapipst=list()
+i=1
+for (i in 1:21){
+  #print the link you are collecting
+  print(paste("https://ridie.3ieimpact.org/index.php?r=search/index&ajax=search-results-gridview&study_page=",toString(1*i),sep=""))
+  #get the link
+  ridie <-read_html(paste("https://ridie.3ieimpact.org/index.php?r=search/index&ajax=search-results-gridview&study_page=",toString(1*i),sep=""))
+  
+  sub_ridie<-html_nodes(ridie, "td")%>%
+    html_children()%>%
+    html_attr("href")
+  sub_ridie <- sub_ridie[!is.na(sub_ridie)][1:20]
+  sub_ridie<-sub_ridie[seq(1, length(sub_ridie), 2)]
+  RCT_ridie<-function(s){
+    title<-html_nodes(s, "dd")%>%html_text()
+    title <- gsub("\n    ", "", title)
+    title <- trimws(title)
+    final<-data.frame(title)
+    return(final)
+  }
+  dataist = list()
+  ii = 1
+  for (ii in 1:10) {
+    sub_ridie_out <- read_html(paste(sub_ridie[ii], sep = "[c]"))
+    print(RCT_ridie(sub_ridie_out))
+    final<-data.frame(RCT_ridie(sub_ridie_out))
+    dataist[[ii]]<-final
+  }
+  fifinal<-do.call(cbindX, dataist)
+  datapipst[[i]]<-fifinal
+  Sys.sleep(1)
+}
+full=do.call(cbindX, datapipst)
+
+full_df <- as.data.frame(t(full))
+full_df[] <- lapply(full_df, as.character)
+full_df<-data.frame(lapply(full_df, trimws))
+full_df
+write.csv(x=full_df,
+          file='Ridie.csv',
+          row.names = FALSE)
