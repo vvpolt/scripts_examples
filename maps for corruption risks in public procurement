@@ -1,0 +1,250 @@
+###Colombia
+###openthe file
+df_ind_co<-read.csv("CO_data_cri_CO.csv")
+
+###filter municipalities
+df_ind_co$Year <- as.Date(df_ind_co$tender_publications_firstcallfortenderdate)
+df_ind_co$Year1 <- format(df_ind_co$Year, format="%Y")
+df_ind_co<-df_ind_co %>%
+  subset(Year1<"2020")
+m_co <- df_ind_co %>%
+  filter(buyer_buyertype == "REGIONAL_AUTHORITY"|buyer_buyertype == "REGIONAL_AGENCY")
+table(df_ind_co$Year1)
+###To agregate by year and city
+
+agreg_co_all<-df_ind_co%>%
+  group_by(buyer_city, Year1)%>% 
+  summarize(Integrity_score = mean(CRI), count=n())%>%
+  arrange(desc(buyer_city, Year1))
+agreg_co_all <- agreg_co_all %>%
+  filter(count>3)
+m_co$cont_count<-1
+agreg_co<-m_co%>%
+  group_by(buyer_city, Year1) %>% 
+  summarize(Integrity_score = mean(CRI), count=n())
+
+###Integrity index for municipalities
+
+ggplot2::ggplot(agreg_co, aes(x=Integrity_score)) + 
+  geom_histogram(colour="black", fill="lightgrey", bins=30)+
+  labs(title="Colombia Integrity score distribution: scale 0 - 100\nMunicipal level", x = "Integrity score", y="Frequency")+
+  theme_minimal()+
+  geom_vline(aes(xintercept=mean(Integrity_score)),
+             color="blue", linetype="dashed", size=1)+
+  facet_wrap(~Year1)
+###For regions
+ggplot2::ggplot(agreg_co_all, aes(x=Integrity_score)) + 
+  geom_histogram(colour="black", fill="lightgrey", bins=30)+
+  labs(title="Colombia Integrity score distribution: scale 0 - 100\nCountry level", x = "Integrity score", y="Frequency")+
+  theme_minimal()+
+  geom_vline(aes(xintercept=mean(Integrity_score)),
+             color="blue", linetype="dashed", size=1)
+
+####To build a map
+uniq_loc_co<-as.data.frame(unique(m_co$buyer_city))
+colnames(uniq_loc_co)<-c("buyer_city")
+uniq_loc_co$buyer_city<-as.character(uniq_loc_co$buyer_city)
+
+
+register_google(key="AIzaSyAvspdQBEJEvaXsSdEs_BakbjLnhJzWqto")
+install.packages("tidygeocoder")
+library(tidygeocoder)
+loc_df_co <- geocode(uniq_loc_co, buyer_city, method="osm")
+all_co<-left_join(m_co, loc_df_co, by=c("buyer_city"))
+all_co$places<-ifelse(all_co$CRI<=20, all_geo$buyer_city, NA)
+all_co$gplaces<-ifelse(all_co$CRI==100, all_geo$buyer_city, NA)
+all_unique_co<-distinct(all_co, places, lat, long)
+all_unique_co_h<-distinct(all_co, gplaces, lat, long)
+all_co_sum<-left_join(agreg_co_all, loc_df_co, by=c("buyer_city"))
+all_co_sum<-all_co_sum%>%
+  filter(long< -2)
+all_co_sum<-all_co_sum%>%
+  filter(long> -150)
+###create a map
+library(ggrepel)
+library(maps)
+ggmap::geocode('Colombia')
+map_co <- get_googlemap(center = c(-74.3, 4.57), zoom = 7)
+bw_map_co <- get_googlemap(center = c(-74.3, 4.57), zoom = 7,
+                          color = "bw",
+                          style = "feature:road|visibility:off&style=element:labels|visibility:off&style=feature:administrative|visibility:off")
+ggmap(bw_map_co)
+gg <- ggplot()
+gg<-ggmap(bw_map_co)+
+  geom_point(data = all_co, aes(x = long, y = lat, color=CRI), size=4)+
+  facet_wrap(~Year1)
+gg<-gg+geom_text_repel(data = all_unique_co, aes(x = long, y = lat, label = places), color="red")
+
+gg
+###borders map
+devtools::install_github("nebulae-co/colmaps")
+library("colmaps")
+head(municipios@data)
+library("ggplot2")
+colmap(municipios)
+
+###To show outstanding municipalities
+Akhmeta<-agreg_ge%>%
+  filter(buyer_city=="Ambrolauri"|buyer_city=="Tsageri")
+
+ggplot(Akhmeta, aes(Year1, Integrity_score, group=1)) + 
+  geom_point()+
+  geom_line()+
+  labs(title="Integrity score distribution: scale 0 - 100", y = "Integrity score", x="Year")+
+  facet_wrap(~buyer_city))
+
+####To filter small municipalities and aggregate by year and city
+
+co_u$cont_count<-1
+agreg_co<-m_co%>%
+  group_by(buyer_city, Year1) %>% 
+  summarize(Integrity_score = mean(CRI), count=n())
+####Let's try
+require("rgdal") # requires sp, will use proj.4 if installed
+require("maptools")
+require("ggplot2")
+require("plyr")
+if (!require(gpclib)) install.packages("gpclib", type="source")
+gpclibPermit()
+col = readOGR(dsn=".", layer="COL_adm2")
+col@data$id = rownames(col@data)
+col.points = fortify(col, region="id")
+col.df = join(col.points, col@data, by="id")
+names(col.df)[names(col.df) == 'NAME_2'] <- 'buyer_city'
+
+agreg_co_all$Integrity_score<-as.numeric(agreg_co_all$Integrity_score)
+eee<-agreg_co_all%>%
+  dplyr::group_by(buyer_city)%>%
+  dplyr::summarise(CRI=mean(Integrity_score))
+
+col.df$buyer_city<-iconv(col.df$buyer_city, from = 'UTF-8', to = 'ASCII//TRANSLIT')
+agreg_co$buyer_city<-iconv(agreg_co$buyer_city, from = 'UTF-8', to = 'ASCII//TRANSLIT')
+aaa=agreg_co_all
+co=col.df
+col.df[] <- lapply(col.df, gsub, pattern='"', replacement='')
+agreg_co[] <- lapply(agreg_co, gsub, pattern='"', replacement='')
+col.df$buyer_city<- casefold(col.df$buyer_city, upper = FALSE)
+agreg_co$buyer_city<-casefold(agreg_co$buyer_city, upper = FALSE)
+library(stringr)
+col.df$buyer_city<- str_to_title(col.df$buyer_city)
+agreg_co$buyer_city<-str_to_title(agreg_co$buyer_city)
+
+map_col<-left_join(col.df, agreg_co, by="buyer_city")
+map_col$long<-as.numeric(map_col$long)
+map_col$lat<-as.numeric(map_col$lat)
+map_col$Integrity_score<-as.numeric(map_col$Integrity_score)
+gg<-ggplot(map_col)+ 
+  aes(long,lat, group=group, fill=Integrity_score) + 
+  geom_polygon()+
+  coord_equal()+
+  labs(title="Colombia")
+gg
+table(col.df$buyer_city)
+table(all_co$buyer_city)
+
+
+gg<-gg+
+  geom_point(data = all_co_sum, aes(x = long, y = lat, group=1,
+                                color=Integrity_score), size=4)
+gg
+
+###map for sweden
+swe = readOGR(dsn=".", layer="SWE_adm2")
+swe@data$id = rownames(swe@data)
+swe.points = fortify(swe, region="id")
+swe.df = join(swe.points, swe@data, by="id")
+names(swe.df)[names(swe.df) == 'NAME_2'] <- 'buyer_city'
+agreg_se_all$Integrity_score<-as.numeric(agreg_se_all$Integrity_score)
+agreg_se_all$buyer_city<-as.character(agreg_se_all$buyer_city)
+agreg_it_all$buyer_city<-as.factor(agreg_it_all$buyer_city)
+agreg_co_all$buyer_city<-as.factor(agreg_co_all$buyer_city)
+agreg_ug_all$buyer_city<-as.factor(agreg_ug_all$buyer_city)
+library(tidyverse)
+require('dplyr')
+rrr<-agreg_se_all%>%
+  dplyr::group_by(buyer_city)%>%
+  dplyr::summarize(CRI=mean(Integrity_score))
+
+swe.df$buyer_city<-iconv(swe.df$buyer_city, from = 'UTF-8', to = 'ASCII//TRANSLIT')
+agreg_se_all$buyer_city<-iconv(agreg_se_all$buyer_city, from = 'UTF-8', to = 'ASCII//TRANSLIT')
+aaa=agreg_se_all
+swo=swe.df
+swe.df[] <- lapply(swe.df, gsub, pattern='"', replacement='')
+agreg_se_all[] <- lapply(agreg_se_all, gsub, pattern='"', replacement='')
+swe.df$buyer_city<- casefold(swe.df$buyer_city, upper = FALSE)
+agreg_se_all$buyer_city<-casefold(agreg_se_all$buyer_city, upper = FALSE)
+library(stringr)
+swe.df$buyer_city<- str_to_title(swe.df$buyer_city)
+agreg_se_all$buyer_city<-str_to_title(agreg_se_all$buyer_city)
+map_swe<-left_join(swe.df, rrr, by="buyer_city")
+table(swe.df$buyer_city)
+table(agreg_se$buyer_city)
+map_swe$long<-as.numeric(map_swe$long)
+map_swe$lat<-as.numeric(map_swe$lat)
+map_swe$CRI<-as.numeric(map_swe$CRI)
+bb<-ggplot(map_swe)+ 
+  aes(long,lat, group=group, fill=CRI) + 
+  geom_polygon()+
+  coord_equal()+
+  labs(title="Sweden")
+bb
+
+###municipality
+Catanzaro<-agreg_co%>%
+  filter(buyer_city=="Balboa")
+
+tt<-ggplot(Catanzaro, aes(Year1, Integrity_score, group=1)) + 
+  geom_point()+
+  geom_line()+
+  labs(y = "Integrity score", x="Year")+
+  facet_wrap(~buyer_city)
+tt
+library(ggpubr)
+all<-ggarrange(qq, ww, ee, uu,
+               ncol = 2, nrow = 2)
+all
+
+###Map for Uganda
+uga = readOGR(dsn=".", layer="UGA_adm1")
+uga@data$id = rownames(uga@data)
+uga.points = fortify(uga, region="id")
+uga.df = join(uga.points, uga@data, by="id")
+names(uga.df)[names(uga.df) == 'NAME_1'] <- 'buyer_city'
+
+ttt<-agreg_ug_all%>%
+  dplyr::group_by(buyer_city)%>%
+  dplyr::summarize(CRI=mean(Integrity_score))
+map_ug<-left_join(uga.df, ttt, by="buyer_city")
+map_ug$long<-as.numeric(map_ug$long)
+map_ug$lat<-as.numeric(map_ug$lat)
+map_ug$CRI<-as.numeric(map_ug$CRI)
+
+nn<-ggplot(map_ug)+ 
+  aes(long,lat, group=group, fill=CRI) + 
+  geom_polygon()+
+  coord_equal()+
+  labs(title="Uganda")
+nn
+
+###Map for Italy
+ita = readOGR(dsn=".", layer="ITA_adm2")
+ita@data$id = rownames(ita@data)
+ita.points = fortify(ita, region="id")
+ita.df = join(ita.points, ita@data, by="id")
+names(ita.df)[names(ita.df) == 'NAME_2'] <- 'buyer_city'
+
+lll<-agreg_it_all%>%
+  dplyr::group_by(buyer_city)%>%
+  dplyr::summarize(CRI=mean(Integrity_score))
+
+map_it<-left_join(ita.df, lll, by="buyer_city")
+map_it$long<-as.numeric(map_it$long)
+map_it$lat<-as.numeric(map_it$lat)
+map_it$CRI<-as.numeric(map_it$CRI)
+
+kk<-ggplot(map_it)+ 
+  aes(long,lat, group=group, fill=CRI) + 
+  geom_polygon()+
+  coord_equal()+
+  labs(title="Italy")
+kk
