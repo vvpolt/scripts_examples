@@ -1,0 +1,417 @@
+rm(list=ls())
+urdon <- read.csv ("C:/Users/viktoriia/Documents/ur_donors.csv", header=TRUE, colClasses = "character", sep=",")
+###Let's exclude all observations with United Russia NGOs
+urdon<-urdon[!grepl("РЕГИОНАЛЬНЫЙ ОБЩЕСТВЕННЫЙ ФОНД", urdon$Donor),]
+urdon<-urdon[!grepl("региональный общественный фонд", urdon$Donor),]
+
+table(urdon$Year)
+table(urdon$Region)
+###Let's find the largest donor per region per year
+urdon$Donation.Return<-as.numeric(urdon$Donation.Return)
+?subset
+maxurdon<-aggregate(Donation.Return~Region+Year,urdon, max)
+?aggregate
+maxurdon<-merge(maxurdon, urdon)
+
+write.table(x=maxurdon,
+            file='UR largest donors.csv',
+            sep=",",
+            row.names = FALSE)
+###Let's open the dataset with all donors for all parties
+alldons <- read.csv ("C:/Users/viktoriia/Documents/alldons.csv", header=TRUE, colClasses = "character", sep=",")
+###Let's create the dataset where we can see large donors with the information on procureents they won
+alldons_proc <- na.omit(alldons, alldons$Procurements)
+library(dplyr)
+maxproc<-right_join(alldons_proc, maxurdon)
+###A couple of rows are duplicated, get rid of them
+maxproc<-maxproc[!duplicated(maxproc),]
+###Replace NAs with 0
+maxproc$Procurements <- ifelse(is.na(maxproc$Procurements),"0", maxproc$Procurements)
+###Recode variables as numeric
+maxproc$Donation.Return<-as.numeric(maxproc$Donation.Return)
+maxproc$Procurements<-as.numeric(maxproc$Procurements)
+
+reg<-lm(maxproc$Donation.Return~maxproc$Procurements)
+summary(reg)
+write.table(x=maxproc,
+            file='donors and procurements for UR.csv',
+            sep=",",
+            row.names = FALSE)
+
+
+table(maxproc$Year)
+table(maxurdon$Year)
+conflicts <- read.csv ("C:/Users/viktoriia/Documents/donors and procurements for UR.csv", header=TRUE, colClasses = "character", sep=",")
+conflicts<-maxproc
+conflicts<-conflicts %>%
+  rename(
+    pp_region=Region
+  )
+conflicts$pp_region <- as.character(conflicts$pp_region)
+conflicts$pp_region[conflicts$pp_region=="Астраханская область"]<-"Astrahan Oblast"
+conflicts$pp_region[conflicts$pp_region=="Рязанская область"]<-"Ryazan Oblast"
+conflicts$pp_region[conflicts$pp_region=="Москва"]<-"Moscow"
+conflicts$pp_region[conflicts$pp_region=="Московская область"]<-"Moscow Oblast"
+conflicts$pp_region[conflicts$pp_region=="Ленинградская область"]<-"Leningrad Oblast"
+conflicts$pp_region[conflicts$pp_region=="Новгородская область"]<-"Novgorod Oblast"
+conflicts$pp_region[conflicts$pp_region=="Кемеровская область"]<-"Kemerovo Oblast"
+conflicts$pp_region[conflicts$pp_region=="Москова"]<-"Moscow"
+conflicts$pp_region[conflicts$pp_region=="Омская область"]<-"Omsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Хакасия"]<-"Republic of Khakassia"
+conflicts$pp_region[conflicts$pp_region=="Ямало-Ненецкий автономный округ"]<-"Yamalo-Nenets Autonomous Area"
+conflicts$pp_region[conflicts$pp_region=="Ивановская область"]<-"Ivanovo Oblast"
+conflicts$pp_region[conflicts$pp_region=="Севастополь"]<-"Sevastopol"
+conflicts$pp_region[conflicts$pp_region=="Ханты-Мансийский автономный округ - Югра"]<-"Khanty-Mansi Autonomous Area - Yugra"
+conflicts$pp_region[conflicts$pp_region=="Тюменская область"]<-"Tyumen Oblast"
+conflicts$pp_region[conflicts$pp_region=="Самарская область"]<-"Samara Oblast"
+conflicts$pp_region[conflicts$pp_region=="Саратовская область"]<-"Saratov Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Башкортостан"]<-"Republic of Bashkortostan"
+conflicts$pp_region[conflicts$pp_region=="Алтайский край"]<-"Altai Krai"
+conflicts$pp_region[conflicts$pp_region=="Республика Алтай"]<-"Altai Republic"
+conflicts$pp_region[conflicts$pp_region=="Республика Тыва"]<-"Tuva Republic"
+conflicts$pp_region[conflicts$pp_region=="Ростовская область"]<-"Rostov Oblast"
+conflicts$pp_region[conflicts$pp_region=="Свердловская область"]<-"Sverdlovsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Костромская область"]<-"Kostroma Oblast"
+conflicts$pp_region[conflicts$pp_region=="Волгоградская область"]<-"Volgograd Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Адыгея"]<-"Republic of Adygeya"
+conflicts$pp_region[conflicts$pp_region=="Республика Калмыкия"]<-"Republic of Kalmykia"
+conflicts$pp_region[conflicts$pp_region=="Тверская область"]<-"Tver Oblast"
+conflicts$pp_region[conflicts$pp_region=="Воронежская область"]<-"Voronezh Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Татарстан"]<-"Republic of Tatarstan"
+conflicts$pp_region[conflicts$pp_region=="Новосибирская область"]<-"Novosibirsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Тамбовская область"]<-"Tambov Oblast"
+conflicts$pp_region[conflicts$pp_region=="Псковская область"]<-"Pskov Oblast"
+conflicts$pp_region[conflicts$pp_region=="Адыгея"]<-"Republic of Adygeya"
+conflicts$pp_region[conflicts$pp_region=="Нижегородская область"]<-"Nizhny Novgorod Oblast"
+conflicts$pp_region[conflicts$pp_region=="Челябинская область"]<-"Chelyabinsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Ульяновская область"]<-"Ulyanovsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Томская область"]<-"Tomsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Владимирская область"]<-"Vladimir Oblast"
+conflicts$pp_region[conflicts$pp_region=="Орловская область"]<-"Oryol Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Саха (Якутия)"]<-"Sakha (Yakutia) Republic"
+conflicts$pp_region[conflicts$pp_region=="Иркутская область"]<-"Irkutsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Хабаровский край"]<-"Khabarovsk Krai"
+conflicts$pp_region[conflicts$pp_region=="Республика Коми"]<-"Komi Republic"
+conflicts$pp_region[conflicts$pp_region=="Ярославская область"]<-"Yaroslavl Oblast"
+conflicts$pp_region[conflicts$pp_region=="Вологодская область"]<-"Vologda Oblast"
+conflicts$pp_region[conflicts$pp_region=="Красноярский край"]<-"Krasnoyarsk Krai"
+conflicts$pp_region[conflicts$pp_region=="Калининградская область"]<-"Kaliningrad Oblast"
+conflicts$pp_region[conflicts$pp_region=="Краснодарский край"]<-"Krasnodar Krai"
+conflicts$pp_region[conflicts$pp_region=="Чукотский автономный округ"]<-"Chutotka Autonomous Area"
+conflicts$pp_region[conflicts$pp_region=="Архангельская область"]<-"Arkhangelsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Смоленская область"]<-"Smolensk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Забайкальский край"]<-"Zabaykalsky Krai"
+conflicts$pp_region[conflicts$pp_region=="Республика Карелия"]<-"Republic of Karelia"
+conflicts$pp_region[conflicts$pp_region=="Магаданская область"]<-"Magadan Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Крым"]<-"Crimea Republic"
+conflicts$pp_region[conflicts$pp_region=="Ставропольский край"]<-"Stavropol Krai"
+conflicts$pp_region[conflicts$pp_region=="Санкт-Петербург"]<-"St. Petersburg"
+conflicts$pp_region[conflicts$pp_region=="Республика Северная Осетия — Алания"]<-"Republic of North Ossetia"
+conflicts$pp_region[conflicts$pp_region=="Кировская область"]<-"Kirov Oblast"
+conflicts$pp_region[conflicts$pp_region=="Иные территории"]<-"Others"
+conflicts$pp_region[conflicts$pp_region=="Липецкая область"]<-"Lipetsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Пермский край"]<-"Perm Krai"
+conflicts$pp_region[conflicts$pp_region=="Калужская область"]<-"Kaluga Oblast"
+conflicts$pp_region[conflicts$pp_region=="Брянская область"]<-"Bryansk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Приморский край"]<-"Primorsky Krai"
+conflicts$pp_region[conflicts$pp_region=="Курганская область"]<-"Kurgan Oblast"
+conflicts$pp_region[conflicts$pp_region=="Оренбургская область"]<-"Orenburg Oblast"
+conflicts$pp_region[conflicts$pp_region=="Удмуртская республика"]<-"Udmurt Republic"
+conflicts$pp_region[conflicts$pp_region=="Чувашская республика"]<-"Chuvash Republic"
+conflicts$pp_region[conflicts$pp_region=="Республика Мордовия"]<-"Republic of Mordovia"
+conflicts$pp_region[conflicts$pp_region=="Республика Марий Эл"]<-"Mari El Republic"
+conflicts$pp_region[conflicts$pp_region=="Сахалинская область"]<-"Sakhalin Oblast"
+conflicts$pp_region[conflicts$pp_region=="Белгородская область"]<-"Belgorod Oblast"
+conflicts$pp_region[conflicts$pp_region=="Чукотский Автономный Округ"]<-"Chutotka Autonomous Area"
+conflicts$pp_region[conflicts$pp_region=="Амурская область"]<-"Amur Oblast"
+conflicts$pp_region[conflicts$pp_region=="Еврейская автономная область"]<-"Jewish Autonomous Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Дагестан"]<-"Republic of Dagestan"
+conflicts$pp_region[conflicts$pp_region=="Карачаево-Черкесская республика"]<-"Karachay-Cherkess Republic"
+conflicts$pp_region[conflicts$pp_region=="Кабардино-Балкарская республика"]<-"Kabardino-Balkar Republic"
+conflicts$pp_region[conflicts$pp_region=="Чеченская республика"]<-"Chechen Republic"
+conflicts$pp_region[conflicts$pp_region=="Республика Ингушетия"]<-"Republic of Ingushetia"
+conflicts$pp_region[conflicts$pp_region=="Мурманская область"]<-"Murmansk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Коми"]<-"Komi Republic"
+conflicts$pp_region[conflicts$pp_region=="Ненецкий автономный округ"]<-"Nenets Autonomous Area"
+conflicts$pp_region[conflicts$pp_region=="Пензенская область"]<-"Penza Oblast"
+conflicts$pp_region[conflicts$pp_region=="Курская область"]<-"Kursk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Чукотка"]<-"Chutotka Autonomous Area"
+conflicts$pp_region[conflicts$pp_region=="Тульская область"]<-"Tula Oblast"
+conflicts$pp_region[conflicts$pp_region=="Камчатский край"]<-"Kamchatka Krai"
+conflicts$pp_region[conflicts$pp_region=="Республика Бурятия"]<-"Republic of Buryatia"
+conflicts<-conflicts[conflicts$pp_region!="Байконур и крупнейшие налогоплательщики", ]
+table(conflicts$pp_region)
+elect<-read.csv ("C:/Users/viktoriia/Documents/fed_reg_final_final.csv", header=TRUE, sep=",")
+conflicts<-conflicts %>%
+  rename(
+    region=pp_region,
+  )
+elect<-elect %>%
+  rename(
+    Year=year
+  )
+elect$Year<-as.character(elect$Year)
+conflicts$Year<-as.character(conflicts$Year)
+conflicts$region<-as.character(conflicts$region)
+elect$region<-as.character(elect$region)
+all<-right_join(elect, conflicts)
+table(all$Year, all$level)
+table(all$Procurements)
+all$fin<-NULL
+all$Donation.Return<-as.numeric(all$Donation.Return)
+all$turnout<-as.numeric(all$turnout)
+all$results_of_UR<-as.numeric(all$results_of_UR)
+write.csv(x=all,
+          file='all_disser.csv',
+          sep=",",
+          row.names = FALSE)
+final <- read.csv ("C:/Users/viktoriia/Documents/all_disser.csv", header=TRUE, colClasses = "character", sep=",")
+final<-all
+table(final$Donation.Return)
+final$Donation.Return<-as.numeric(final$Donation.Return)
+final$results_of_UR<-as.numeric(final$results_of_UR)
+final$turnout<-as.numeric(final$turnout)
+final$Procurements<-as.numeric
+###Let's run some fixed models
+final$proc_log<-log(final$Procurements+1)
+final$id<-group_indices(final, region, Donor)
+lm<-lm(Donation.Return~Procurements+turnout+factor(id), data=final, index=c("Year"), model="within", effect="twoways")
+summary(lm)
+write.csv(x=final,
+          file='all_disser.csv',
+          sep=",",
+          row.names = FALSE)
+
+
+###Now let's leave only those observations that are higher than st deviation, so leave all the largest donors
+install.packages("dplyr")
+library(dplyr)
+
+urdon<-urdon%>%
+  group_by(Region,Year)%>%
+  mutate(Donation.Return_mn=mean(Donation.Return))%>%
+  mutate(Donation.Return_sd=sd(Donation.Return))
+
+urdon$fin[urdon$Donation.Return>=urdon$Donation.Return_sd] <- TRUE
+summary(urdon$fin)
+
+largest<-urdon
+install.packages("tidyr")
+library(tidyr)
+###Drop all those donations lower than st deviation for a group
+largest<-largest%>%drop_na(fin)
+summary(largest$Donation.Return)
+
+###Let's open the dataset with all donors for all parties
+alldons <- read.csv ("C:/Users/viktoriia/Documents/alldons.csv", header=TRUE, colClasses = "character", sep=",")
+###Let's create the dataset where we can see large donors with the information on procureents they won
+alldons_proc <- na.omit(alldons, alldons$Procurements)
+library(dplyr)
+maxproc<-right_join(alldons_proc, largest)
+###A couple of rows are duplicated, get rid of them
+maxproc<-maxproc[!duplicated(maxproc),]
+###Replace NAs with 0
+maxproc$Procurements <- ifelse(is.na(maxproc$Procurements),"0", maxproc$Procurements)
+###Recode variables as numeric
+maxproc$Donation.Return<-as.numeric(maxproc$Donation.Return)
+maxproc$Procurements<-as.numeric(maxproc$Procurements)
+###Let's rename now
+
+conflicts<-maxproc
+conflicts<-conflicts %>%
+  rename(
+    pp_region=Region
+  )
+conflicts$pp_region <- as.character(conflicts$pp_region)
+conflicts$pp_region[conflicts$pp_region=="Астраханская область"]<-"Astrahan Oblast"
+conflicts$pp_region[conflicts$pp_region=="Рязанская область"]<-"Ryazan Oblast"
+conflicts$pp_region[conflicts$pp_region=="Москва"]<-"Moscow"
+conflicts$pp_region[conflicts$pp_region=="Московская область"]<-"Moscow Oblast"
+conflicts$pp_region[conflicts$pp_region=="Ленинградская область"]<-"Leningrad Oblast"
+conflicts$pp_region[conflicts$pp_region=="Новгородская область"]<-"Novgorod Oblast"
+conflicts$pp_region[conflicts$pp_region=="Кемеровская область"]<-"Kemerovo Oblast"
+conflicts$pp_region[conflicts$pp_region=="Москова"]<-"Moscow"
+conflicts$pp_region[conflicts$pp_region=="Омская область"]<-"Omsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Хакасия"]<-"Republic of Khakassia"
+conflicts$pp_region[conflicts$pp_region=="Ямало-Ненецкий автономный округ"]<-"Yamalo-Nenets Autonomous Area"
+conflicts$pp_region[conflicts$pp_region=="Ивановская область"]<-"Ivanovo Oblast"
+conflicts$pp_region[conflicts$pp_region=="Севастополь"]<-"Sevastopol"
+conflicts$pp_region[conflicts$pp_region=="Ханты-Мансийский автономный округ - Югра"]<-"Khanty-Mansi Autonomous Area - Yugra"
+conflicts$pp_region[conflicts$pp_region=="Тюменская область"]<-"Tyumen Oblast"
+conflicts$pp_region[conflicts$pp_region=="Самарская область"]<-"Samara Oblast"
+conflicts$pp_region[conflicts$pp_region=="Саратовская область"]<-"Saratov Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Башкортостан"]<-"Republic of Bashkortostan"
+conflicts$pp_region[conflicts$pp_region=="Алтайский край"]<-"Altai Krai"
+conflicts$pp_region[conflicts$pp_region=="Республика Алтай"]<-"Altai Republic"
+conflicts$pp_region[conflicts$pp_region=="Республика Тыва"]<-"Tuva Republic"
+conflicts$pp_region[conflicts$pp_region=="Ростовская область"]<-"Rostov Oblast"
+conflicts$pp_region[conflicts$pp_region=="Свердловская область"]<-"Sverdlovsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Костромская область"]<-"Kostroma Oblast"
+conflicts$pp_region[conflicts$pp_region=="Волгоградская область"]<-"Volgograd Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Адыгея"]<-"Republic of Adygeya"
+conflicts$pp_region[conflicts$pp_region=="Республика Калмыкия"]<-"Republic of Kalmykia"
+conflicts$pp_region[conflicts$pp_region=="Тверская область"]<-"Tver Oblast"
+conflicts$pp_region[conflicts$pp_region=="Воронежская область"]<-"Voronezh Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Татарстан"]<-"Republic of Tatarstan"
+conflicts$pp_region[conflicts$pp_region=="Новосибирская область"]<-"Novosibirsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Тамбовская область"]<-"Tambov Oblast"
+conflicts$pp_region[conflicts$pp_region=="Псковская область"]<-"Pskov Oblast"
+conflicts$pp_region[conflicts$pp_region=="Адыгея"]<-"Republic of Adygeya"
+conflicts$pp_region[conflicts$pp_region=="Нижегородская область"]<-"Nizhny Novgorod Oblast"
+conflicts$pp_region[conflicts$pp_region=="Челябинская область"]<-"Chelyabinsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Ульяновская область"]<-"Ulyanovsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Томская область"]<-"Tomsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Владимирская область"]<-"Vladimir Oblast"
+conflicts$pp_region[conflicts$pp_region=="Орловская область"]<-"Oryol Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Саха (Якутия)"]<-"Sakha (Yakutia) Republic"
+conflicts$pp_region[conflicts$pp_region=="Иркутская область"]<-"Irkutsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Хабаровский край"]<-"Khabarovsk Krai"
+conflicts$pp_region[conflicts$pp_region=="Республика Коми"]<-"Komi Republic"
+conflicts$pp_region[conflicts$pp_region=="Ярославская область"]<-"Yaroslavl Oblast"
+conflicts$pp_region[conflicts$pp_region=="Вологодская область"]<-"Vologda Oblast"
+conflicts$pp_region[conflicts$pp_region=="Красноярский край"]<-"Krasnoyarsk Krai"
+conflicts$pp_region[conflicts$pp_region=="Калининградская область"]<-"Kaliningrad Oblast"
+conflicts$pp_region[conflicts$pp_region=="Краснодарский край"]<-"Krasnodar Krai"
+conflicts$pp_region[conflicts$pp_region=="Чукотский автономный округ"]<-"Chutotka Autonomous Area"
+conflicts$pp_region[conflicts$pp_region=="Архангельская область"]<-"Arkhangelsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Смоленская область"]<-"Smolensk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Забайкальский край"]<-"Zabaykalsky Krai"
+conflicts$pp_region[conflicts$pp_region=="Республика Карелия"]<-"Republic of Karelia"
+conflicts$pp_region[conflicts$pp_region=="Магаданская область"]<-"Magadan Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Крым"]<-"Crimea Republic"
+conflicts$pp_region[conflicts$pp_region=="Ставропольский край"]<-"Stavropol Krai"
+conflicts$pp_region[conflicts$pp_region=="Санкт-Петербург"]<-"St. Petersburg"
+conflicts$pp_region[conflicts$pp_region=="Республика Северная Осетия — Алания"]<-"Republic of North Ossetia"
+conflicts$pp_region[conflicts$pp_region=="Кировская область"]<-"Kirov Oblast"
+conflicts$pp_region[conflicts$pp_region=="Иные территории"]<-"Others"
+conflicts$pp_region[conflicts$pp_region=="Липецкая область"]<-"Lipetsk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Пермский край"]<-"Perm Krai"
+conflicts$pp_region[conflicts$pp_region=="Калужская область"]<-"Kaluga Oblast"
+conflicts$pp_region[conflicts$pp_region=="Брянская область"]<-"Bryansk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Приморский край"]<-"Primorsky Krai"
+conflicts$pp_region[conflicts$pp_region=="Курганская область"]<-"Kurgan Oblast"
+conflicts$pp_region[conflicts$pp_region=="Оренбургская область"]<-"Orenburg Oblast"
+conflicts$pp_region[conflicts$pp_region=="Удмуртская республика"]<-"Udmurt Republic"
+conflicts$pp_region[conflicts$pp_region=="Чувашская республика"]<-"Chuvash Republic"
+conflicts$pp_region[conflicts$pp_region=="Республика Мордовия"]<-"Republic of Mordovia"
+conflicts$pp_region[conflicts$pp_region=="Республика Марий Эл"]<-"Mari El Republic"
+conflicts$pp_region[conflicts$pp_region=="Сахалинская область"]<-"Sakhalin Oblast"
+conflicts$pp_region[conflicts$pp_region=="Белгородская область"]<-"Belgorod Oblast"
+conflicts$pp_region[conflicts$pp_region=="Чукотский Автономный Округ"]<-"Chutotka Autonomous Area"
+conflicts$pp_region[conflicts$pp_region=="Амурская область"]<-"Amur Oblast"
+conflicts$pp_region[conflicts$pp_region=="Еврейская автономная область"]<-"Jewish Autonomous Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Дагестан"]<-"Republic of Dagestan"
+conflicts$pp_region[conflicts$pp_region=="Карачаево-Черкесская республика"]<-"Karachay-Cherkess Republic"
+conflicts$pp_region[conflicts$pp_region=="Кабардино-Балкарская республика"]<-"Kabardino-Balkar Republic"
+conflicts$pp_region[conflicts$pp_region=="Чеченская республика"]<-"Chechen Republic"
+conflicts$pp_region[conflicts$pp_region=="Республика Ингушетия"]<-"Republic of Ingushetia"
+conflicts$pp_region[conflicts$pp_region=="Мурманская область"]<-"Murmansk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Республика Коми"]<-"Komi Republic"
+conflicts$pp_region[conflicts$pp_region=="Ненецкий автономный округ"]<-"Nenets Autonomous Area"
+conflicts$pp_region[conflicts$pp_region=="Пензенская область"]<-"Penza Oblast"
+conflicts$pp_region[conflicts$pp_region=="Курская область"]<-"Kursk Oblast"
+conflicts$pp_region[conflicts$pp_region=="Чукотка"]<-"Chutotka Autonomous Area"
+conflicts$pp_region[conflicts$pp_region=="Тульская область"]<-"Tula Oblast"
+conflicts$pp_region[conflicts$pp_region=="Камчатский край"]<-"Kamchatka Krai"
+conflicts$pp_region[conflicts$pp_region=="Республика Бурятия"]<-"Republic of Buryatia"
+conflicts<-conflicts[conflicts$pp_region!="Байконур и крупнейшие налогоплательщики", ]
+table(conflicts$pp_region)
+
+
+elect<-read.csv ("C:/Users/viktoriia/Documents/fed_reg_final_final.csv", header=TRUE, sep=",")
+conflicts<-conflicts %>%
+  rename(
+    region=pp_region,
+  )
+elect<-elect %>%
+  rename(
+    Year=year
+  )
+elect$Year<-as.character(elect$Year)
+conflicts$Year<-as.character(conflicts$Year)
+conflicts$region<-as.character(conflicts$region)
+elect$region<-as.character(elect$region)
+all<-right_join(elect, conflicts)
+table(all$Year, all$level)
+table(all$Procurements)
+all$Donation.Return<-as.numeric(all$Donation.Return)
+all$Procurements<-as.numeric(all$Procurements)
+all$fin<-NULL
+all$Donation.Return_mn<-NULL
+all$Donation.Return_sd<-NULL
+
+write.csv(x=all,
+          file='largest_all.csv',
+          sep=",",
+          row.names = FALSE)
+table(all$Year)
+table(all$Procurements)
+
+###Now I want to add categories of activities to this database
+activities<-read.csv ("C:/Users/viktoriia/Documents/Activity_category.csv", header=TRUE, colClasses = "character", sep=",")
+activities<-activities %>%
+  rename(
+    ID=Identification.number,
+    Year1=Year,
+    reg=region
+  )
+fi<-cbind(activities, all)
+fi$ID<-NULL
+fi$Year1<-NULL
+fi$reg<-NULL
+
+###I want to add individual enterpreneur to activities
+
+lm<-lm(Donation.Return~Procurements+turnout+results_of_UR+factor(Year)-1, data=all)
+summary(lm)
+install.packages('gplots')
+library(gplots)
+plotmeans(Donation.Return~Year, main="Heterogeineity across years", data=all)
+plotmeans(Procurements~Year, main="Heterogeineity across years", data=all)
+plotmeans(results_of_UR~Year, main="Heterogeineity across years", data=all)
+plotmeans(Donation.Return~region, main="Heterogeineity across regions", data=all)
+all$regyear<-paste(all$region, all$Year)
+library(plm)
+all$turnout<-as.numeric(all$turnout)
+all$results_of_UR<-as.numeric(all$results_of_UR)
+fixed <- plm(Donation.Return~Procurements, data=all, index=c("regyear"), model="within")
+ols<-lm(Donation.Return~Procurements, data=all)
+summary(fixed)
+summary(all$region)
+summary(ols)
+table(elect$Year)
+all<-read.csv ("C:/Users/viktoriia/Documents/largest_all.csv", header=TRUE, sep=",")
+plot(all$region)
+
+library(ggplot2)
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("hrbrthemes")
+library(hrbrthemes)
+install.packages("viridis")
+library(viridis)
+library(forcats)
+
+ggplot(all, aes(x=level, y=results_of_UR))+
+  geom_line()+
+  facet_wrap(~Year, ncol=5)+
+  theme(axis.text.x=element_text(angle=90))
+
+plot(all$Donation.Return, all$region)
+summary(all)
+all$Procurements<-as.numeric(all$Procurements)
+all$Year<-as.character(all$Year)
+plot(all$Procurements, all$region)
+ggplot(all, aes(x=Year, y=results_of_UR))+
+  geom_boxplot()
+ggplot(all, aes(x=Year, y=turnout))+
+  geom_boxplot()
+
+fixed1 <- plm(results_of_UR~turnout, data=all, index=c("Year"), model="within")
+summary(fixed1)
+
+
+write.table(x=all,
+          file='final_all.csv',
+          sep=",",
+          row.names = FALSE)
