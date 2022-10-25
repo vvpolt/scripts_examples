@@ -1,0 +1,393 @@
+###ITALY
+####adding years variable
+italy<-read.csv("IT_data_cri_IT.csv")
+italy$Year <- as.Date(italy$tender_publications_firstdcontractawarddate)
+italy$Year1 <- format(italy$Year, format="%Y")
+library(ggplot2)
+ggplot2::ggplot(italy, aes(x=CRI)) + 
+  geom_histogram(colour="black", fill="lightgrey", bins=30)+
+  labs(title="Italt CRI distribution: scale 0 - 100", x = "CRI", y="Frequency")+
+  theme_minimal()+
+  geom_vline(aes(xintercept=mean(CRI)),
+             color="blue", linetype="dashed", size=1)
+
+###distribution of Integrity score
+ggplot2::ggplot(agreg_it_all, aes(x=Integrity_score)) + 
+  geom_histogram(colour="black", fill="lightgrey", bins=30)+
+  labs(title="Italy Integrity score distribution: scale 0 - 100\nCountry level", x = "Integrity score", y="Frequency")+
+  theme_minimal()+
+  geom_vline(aes(xintercept=mean(Integrity_score)),
+             color="blue", linetype="dashed", size=1)
+ggplot2::ggplot(agreg_it, aes(x=Integrity_score)) + 
+  geom_histogram(colour="black", fill="lightgrey", bins=30)+
+  labs(title="Italy Integrity score distribution: scale 0 - 100\nMunicipal level", x = "Integrity score", y="Frequency")+
+  theme_minimal()+
+  geom_vline(aes(xintercept=mean(Integrity_score)),
+             color="blue", linetype="dashed", size=1)+
+  facet_wrap(~Year1)
+
+
+install.packages(c("cowplot", "googleway", "ggplot2", "ggrepel", 
+                   "ggspatial", "libwgeom", "sf", "rnaturalearth", "rnaturalearthdata"))
+
+###to build a map of Italy                 
+install.packages(c("maptools", "ggalt", "ggthemes", "viridis"))
+library(maptools)
+library(ggplot2)
+library(ggalt)
+library(ggthemes)
+library(tibble)
+library(viridis)
+install.packages("maps")
+library(maps)
+data(italyMapEnv)
+italy_map <- map_data("italy")
+
+###to assign lat and lon data to localities 
+###### to identify localities
+municipal <- italy %>%
+  filter(buyer_buyertype=="REGIONAL_AUTHORITY")
+uniq_loc<-as.data.frame(unique(municipal$buyer_city))
+uniq_loc$buyer_city<-as.character(uniq_loc$buyer_city)
+uniq_loc$buyer_city[uniq_loc$buyer_city=="Roma"]<-"Rome"
+uniq_loc$buyer_city[uniq_loc$buyer_city=="Milano"]<-"Milan"
+municipal$buyer_city[municipal$buyer_city=="Roma"]<-"Rome"
+municipal$buyer_city[municipal$buyer_city=="Milano"]<-"Milan"
+italy_map<-italy_map %>% 
+  rename(
+    lon = long
+  )
+uniq_loc<-uniq_loc %>% 
+  rename(
+    buyer_city = "unique(municipal$buyer_city)"
+  )
+
+###to start assigning long and lat
+library(tidyverse)
+install.packages("ggmap")
+library(ggmap)
+register_google(key="AIzaSyCuLIWwCYssPCiUgRXPIl_rnAuJ0rDcZAc")
+locations_df <- mutate_geocode(uniq_loc, buyer_city)
+all<-left_join(municipal, locations_df, by=c("buyer_city"))
+####To filter everything outside of Italy
+all_f <- all %>%
+  filter(lon>5&lon<25&lat>3&lat<50)
+
+all_f <- all_f %>%
+  filter(buyer_city!="Pula")
+
+all$CRI<-as.numeric(all$CRI)
+
+all_f_y<-agreg_it%>%
+  subset(Year1=="2011"|Year1=="2015"|Year1=="2019")
+
+###To ggregate by year and city
+agreg_it_all<-italy%>%
+  group_by(buyer_city, Year1)%>% 
+  summarize(Integrity_score = mean(CRI), count=n())%>%
+  arrange(desc(buyer_city, Year1))
+agreg_it_all <- agreg_it_all %>%
+  filter(count>3)
+table(agreg_it_all$buyer_city, agreg_it_all$count)
+summary(agreg_se_all$Integrity_score)
+
+###To filter small municipalities and aggregate by year and city
+all_f$cont_count<-1
+agreg_it<-all_f%>%
+  group_by(buyer_city, Year1, lon, lat) %>% 
+  summarize(Integrity_score = mean(CRI), count=n())
+
+table(all_f$buyer_city, all_f$Year1)
+table(agreg_it$buyer_city, agreg_it$Year1)
+
+agreg_it <- agreg_it %>%
+  filter(count>3)
+agreg_it <- agreg_it %>%
+  filter(Year1>"2010")
+agreg_it <- agreg_it %>%
+  filter(Year1<"2020")
+###to show one municipality progress
+Catanzaro<-agreg_it%>%
+  filter(buyer_city=="Catanzaro")
+Macerata<-agreg_it%>%
+  filter(buyer_city=="Macerata")
+
+ee<-ggplot(Catanzaro, aes(Year1, Integrity_score, group=1)) + 
+  geom_point()+
+  geom_line()+
+  labs(y = "Integrity score", x="Year")+
+  facet_wrap(~buyer_city)
+ee  
+uu<-ggplot(Macerata, aes(Year1, Integrity_score, group=1)) + 
+  geom_point()+
+  geom_line()+
+  labs(y = "Integrity score", x="Year")+
+  facet_wrap(~buyer_city)
+uu 
+###To create a map
+geom_histogram()
+library(ggrepel)
+library(maps)
+italy_map <- map_data("italy")
+geocode('Rome')
+map <- get_googlemap(center = c(12.5, 41.9), zoom = 6)
+bw_map <- get_googlemap(center = c(12.5, 41.9), zoom = 6,
+                        color = "bw",
+                        style = "feature:road|visibility:off&style=element:labels|visibility:off&style=feature:administrative|visibility:off")
+ggmap(bw_map)
+gg <- ggplot()
+gg<-ggmap(bw_map)+
+  geom_point(data = agreg_it, aes(x = lon, y = lat, color=Integrity_score), size=5)+
+  scale_colour_distiller(trans = "reverse", palette="Blues")
+gg<-gg + geom_map(data=italy_map, map=italy_map,
+               aes(long, lat, map_id=region),
+               color="black", size=0.5, fill=NA)
+gg<-gg+geom_text_repel(data = all_unique_g, aes(x = lon, y = lat, label = gplaces), color="white")
+
+gg
+
+######additional option gg<- gg+ geom_map(data=all, map=italy_map,
+###aes(fill=CRI, map_id=buyer_city),
+###color="#b2b2b2", size=0.1)
+####Save merged file
+country <- "IT"
+currentdate <- gsub("-","",Sys.Date())
+file.name <- sprintf("IT_data_locations.csv", country, currentdate)
+print(file.name)
+readr::write_excel_csv(all, file.name)
+
+file.name <- sprintf("IT_data_locations.csv", toupper(country))
+df <- read_delim(file.name, delim = ",", col_types = cols(.default = col_character()))
+
+###SWEDEN
+###redefine the submission period
+df_ind<-read.csv("SE_data_cri_SE.csv")
+df_ind$submission_period <- as.Date(df_ind$tender_biddeadline) - as.Date(df_ind$tender_publications_firstcallfortenderdate)
+
+df_ind$corr_subm[df_ind[['submission_period']] %in% seq(35, 365)] <- 50
+df_ind$corr_subm[df_ind[['submission_period']] %in% seq(1, 34)] <- 100
+mean(df$corr_subm, na.rm=TRUE)
+mean(df$corr_subm)
+table(df$INTEGRITY_ADVERTISEMENT_PERIOD)
+df_ind$INTEGRITY_ADVERTISEMENT_PERIOD<-df_ind$corr_subm
+
+###To ggregate by year and city
+agreg_se_all<-df_ind%>%
+  group_by(buyer_city, Year1)%>% 
+  summarize(Integrity_score = mean(CRI), count=n())%>%
+  arrange(desc(buyer_city, Year1))
+agreg_se_all <- agreg_se_all %>%
+  filter(count>3)
+###To filter small municipalities and aggregate by year and city
+m_s$cont_count<-1
+agreg_se<-m_s%>%
+  group_by(buyer_city, Year1) %>% 
+  summarize(Integrity_score = mean(CRI), count=n())
+
+table(all_f$buyer_city, all_f$Year1)
+table(agreg_it$buyer_city, agreg_it$Year1)
+
+agreg_se <- agreg_se %>%
+  filter(count>3)
+agreg_se <- agreg_se %>%
+  filter(Year1>"2010")
+agreg_se <- agreg_se %>%
+  filter(Year1<"2020")
+
+###to build histograms
+
+df_ind$Year <- as.Date(df_ind$tender_publications_firstdcontractawarddate)
+df_ind$Year1 <- format(df_ind$Year, format="%Y")
+m_s <- df_ind %>%
+  filter(buyer_buyertype == "REGIONAL_AUTHORITY"|buyer_buyertype =="REGIONAL_AGENCY")
+
+ggplot2::ggplot(agreg_se_all, aes(x=Integrity_score)) + 
+  geom_histogram(colour="black", fill="lightgrey", bins=30)+
+  labs(title="Sweden Integrity score distribution: scale 0 - 100\nCountry level", x = "Integrity score", y="Frequency")+
+  theme_minimal()+
+  geom_vline(aes(xintercept=mean(Integrity_score)),
+             color="blue", linetype="dashed", size=1)
+
+ggplot2::ggplot(agreg_se, aes(x=Integrity_score)) + 
+  geom_histogram(colour="black", fill="lightgrey", bins=30)+
+  labs(title="Sweden Integrity score distribution: scale 0 - 100\nMunicipal level", x = "Integrity score", y="Frequency")+
+  theme_minimal()+
+  geom_vline(aes(xintercept=mean(Integrity_score)),
+             color="blue", linetype="dashed", size=1)+
+  facet_wrap(~Year1)
+
+###To show two local exceptional cases
+Angelhom<-agreg_se%>%
+  filter(buyer_city=="Alingsås")
+
+qq<-ggplot(Angelhom, aes(Year1, Integrity_score, group=1)) + 
+  geom_point()+
+  geom_line()+
+  labs(y = "Integrity score", x="Year")+
+  facet_wrap(~buyer_city)
+qq
+###UGANDA
+###openthe file
+df_ind_u<-read.csv("UG_data_cri_UG.csv")
+
+###filter municipalities
+df_ind_u$Year <- as.Date(df_ind_u$tender_publications_firstdcontractawarddate)
+df_ind_u$Year1 <- format(df_ind_u$Year, format="%Y")
+df_ind_u<-df_ind_u %>%
+  subset(Year1<"2020")
+m_u <- df_ind_u %>%
+  filter(buyer_buyertype == "REGIONAL_AUTHORITY"|buyer_buyertype == "REGIONAL_AGENCY")
+###To agregate by year and city
+
+agreg_ug_all<-df_ind_u%>%
+  group_by(buyer_city, Year1)%>% 
+  summarize(Integrity_score = mean(CRI), count=n())%>%
+  arrange(desc(buyer_city, Year1))
+
+####To filter small municipalities and aggregate by year and city
+
+m_u$cont_count<-1
+agreg_ug<-m_u%>%
+  group_by(buyer_city, Year1) %>% 
+  summarize(Integrity_score = mean(CRI), count=n())
+
+table(all_f$buyer_city, all_f$Year1)
+table(agreg_it$buyer_city, agreg_it$Year1)
+
+###hists
+ggplot2::ggplot(agreg_ug_all, aes(x=Integrity_score)) + 
+  geom_histogram(colour="black", fill="lightgrey", bins=30)+
+  labs(title="Uganda Integrity score distribution: scale 0 - 100\nCountry level", x = "Integrity score", y="Frequency")+
+  theme_minimal()+
+  geom_vline(aes(xintercept=mean(Integrity_score)),
+             color="blue", linetype="dashed", size=1)
+ggplot2::ggplot(agreg_ug, aes(x=Integrity_score)) + 
+  geom_histogram(colour="black", fill="lightgrey", bins=30)+
+  labs(title="Uganda Integrity score distribution: scale 0 - 100\nMunicipal level", x = "Integrity score", y="Frequency")+
+  theme_minimal()+
+  geom_vline(aes(xintercept=mean(Integrity_score)),
+             color="blue", linetype="dashed", size=1)+
+  facet_wrap(~Year1)
+###municipality
+Angelhom<-agreg_ug%>%
+  filter(buyer_city=="Nebbi")
+
+ww<-ggplot(Angelhom, aes(Year1, Integrity_score, group=1)) + 
+  geom_point()+
+  geom_line()+
+  labs(y = "Integrity score", x="Year")+
+  facet_wrap(~buyer_city)
+ww
+#####GEORGIA
+
+df_ind_g<-read_csv("GE_data_cri_GE.csv")
+###filter municipalities
+library(dplyr)
+
+df_ind_g$Year <- as.Date(df_ind_g$Year)
+df_ind_g$Year1 <- format(df_ind_g$Year, format="%Y")
+
+m_g <- df_ind_g %>%
+  filter(buyer_buyertype == "REGIONAL_AUTHORITY"|buyer_buyertype == "REGIONAL_AGENCY")
+m_g<-m_g %>%
+  subset(Year1>"2010" & Year1<"2020")
+df_ind_g<-df_ind_g %>%
+  subset(Year1>"2010" & Year1<"2020")
+###To aggregate by year and city
+agreg_ge_all<-df_ind_g%>%
+  group_by(buyer_city, Year1)%>% 
+  summarize(Integrity_score = mean(CRI), count=n())%>%
+  arrange(desc(buyer_city, Year1))
+agreg_ge_all <- agreg_ge_all %>%
+  filter(count>3)
+###To filter small municipalities and aggregate by year and city
+m_g$cont_count<-1
+agreg_ge<-m_g%>%
+  group_by(buyer_city, Year1) %>% 
+  summarize(Integrity_score = mean(CRI), count=n())
+
+table(all_f$buyer_city, all_f$Year1)
+table(agreg_it$buyer_city, agreg_it$Year1)
+
+agreg_ge <- agreg_ge %>%
+  filter(count>3)
+agreg_ge <- agreg_ge %>%
+  filter(Year1>"2010")
+agreg_ge <- agreg_ge %>%
+  filter(Year1<"2020")
+
+###Integrity index for municipalities
+ggplot2::ggplot(agreg_ge, aes(x=Integrity_score)) + 
+  geom_histogram(colour="black", fill="lightgrey", bins=30)+
+  labs(title="Georgia Integrity score distribution: scale 0 - 100\nMunicipal level", x = "Integrity score", y="Frequency")+
+  theme_minimal()+
+  geom_vline(aes(xintercept=mean(Integrity_score)),
+             color="blue", linetype="dashed", size=1)+
+  facet_wrap(~Year1)
+
+###To show outstanding municipalities
+Akhmeta<-agreg_ge%>%
+  filter(buyer_city=="Ambrolauri"|buyer_city=="Tsageri")
+
+ggplot(Akhmeta, aes(Year1, Integrity_score, group=1)) + 
+  geom_point()+
+  geom_line()+
+  labs(title="Integrity score distribution: scale 0 - 100", y = "Integrity score", x="Year")+
+  facet_wrap(~buyer_city)
+
+
+####To build a map
+uniq_loc_g<-as.data.frame(unique(m_g$buyer_city))
+uniq_loc_g$buyer_city<-as.character(uniq_loc_g$buyer_city)
+uniq_loc_g<-uniq_loc_g %>% 
+  rename(
+    buyer_city = "unique(m_g$buyer_city)"
+  )
+
+register_google(key="AIzaSyDv_Tu7iGBVonDSqb0c-NC6AMRfb3No-H0")
+install.packages("tidygeocoder")
+library(tidygeocoder)
+loc_df_g <- geocode(uniq_loc_g, buyer_city, method="osm")
+all_geo<-left_join(m_g, loc_df_g, by=c("buyer_city"))
+all_geo$places<-ifelse(all_geo$CRI<=20, all_geo$buyer_city, NA)
+all_geo$gplaces<-ifelse(all_geo$CRI==100, all_geo$buyer_city, NA)
+all_unique_geo<-distinct(all_geo, places, lat, long)
+all_unique_geo_h<-distinct(all_geo, gplaces, lat, long)
+###create a map
+library(ggrepel)
+library(maps)
+ggmap::geocode('Tbilisi')
+map_g <- get_googlemap(center = c(44.8, 41.7), zoom = 7)
+bw_map_g <- get_googlemap(center = c(44.8, 41.7), zoom = 7,
+                          color = "bw",
+                          style = "feature:road|visibility:off&style=element:labels|visibility:off&style=feature:administrative|visibility:off")
+ggmap(bw_map_g)
+gg <- ggplot()
+gg<-ggmap(bw_map_g)+
+  geom_point(data = all_geo, aes(x = long, y = lat, color=CRI), size=4)+
+  facet_wrap(~Year1)
+gg<-gg+geom_text_repel(data = all_unique_geo, aes(x = long, y = lat, label = places), color="red")
+
+gg
+
+
+####multiple hits on one
+colors <- c("Italy" = "lightyellow", "Sweden" = "lightblue", "Colombia" = "coral", "Uganda"="lightgreen")
+gg_h<-ggplot()
+gg_h<-ggplot(agreg_se_all, aes(x=Integrity_score, fill="Sweden")) + 
+  geom_histogram(colour="black", bins=30, alpha = 0.8)+
+  labs(title="Integrity score distribution: scale 0 - 100\nColombia, Italy, Sweden, Uganda", x = "Integrity score", y="Count")+
+  theme_minimal()+
+  aes(y=stat(count)/sum(stat(count)))+ 
+  scale_y_continuous(labels = scales::percent)+
+  labs(y="Percent")
+gg_h<-gg_h+geom_histogram(data=agreg_it_all, aes (x=Integrity_score, fill="Italy"),
+                          colour="black", bins=30, alpha = 0.8)
+gg_h<-gg_h+geom_histogram(data=agreg_co_all, aes (x=Integrity_score, fill="Colombia"),
+                          colour="black", bins=30, alpha = 0.8)
+gg_h<-gg_h+geom_histogram(data=agreg_ug_all, aes (x=Integrity_score, fill="Uganda"),
+                          colour="black",bins=30, alpha = 0.8)
+gg_h<-gg_h+scale_fill_manual("Histogram Legend", values=colors)
+gg_h<-gg_h+geom_vline(aes(xintercept=mean(Integrity_score)),
+                      color="black", linetype="dashed", size=1)
+gg_h
